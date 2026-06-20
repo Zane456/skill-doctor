@@ -8,8 +8,6 @@ English | [简体中文](README.zh-CN.md)
   <img src="assets/hero.png" alt="skill-doctor — health check for AI agent skills: diagnose SKILL.md trigger reliability, routing recall, and package structure" width="760" />
 </p>
 
-> *"A skill the model never triggers is just dead documentation."*
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/works_on-Claude_Code_·_Codex_·_Hermes_·_OpenClaw-blueviolet.svg)]()
 [![Checks](https://img.shields.io/badge/checks-4%20deterministic-2ea44f.svg)]()
@@ -17,11 +15,11 @@ English | [简体中文](README.zh-CN.md)
 
 <br>
 
-**Reviews your agent skills so the model actually triggers them, reads them whole, and routes through them cleanly.**
+**Audits an agent skill so the model reliably triggers it, reads it whole, and routes through it.**
 
 <br>
 
-A broken skill never errors. It just doesn't fire, or the model reads half of it and moves on — and you find out weeks later that the skill you wrote never triggered once. skill-doctor is the pass that catches that. It scores how reliably a `SKILL.md` triggers, runs a routing-recall test on every reference file, names the failure mode, and restructures the package when the routing breaks. Deterministic scripts carry the core checks; none needs an API key, and they work the same across Claude Code, Codex, Hermes, and OpenClaw.
+skill-doctor is a meta-skill — it reviews another skill's `SKILL.md`, references, and scripts. It scores whether the model will trigger the skill, read the body in full, and route to the right reference; it names what is wrong and restructures the package when routing breaks. The core checks are deterministic scripts with exit codes and need no API key. They run the same on Claude Code, Codex, Hermes, and OpenClaw.
 
 <br>
 
@@ -297,14 +295,6 @@ skill-doctor/
 ---
 
 <div align="center">
-
-> *A skill the model never triggers is just dead documentation.*
-
-<br>
-
-⭐ If skill-doctor caught a dead step in one of your skills, give it a star.
-
-<br>
 
 **Zane456** — author of [clear-chinese](https://github.com/Zane456/clear-chinese)
 

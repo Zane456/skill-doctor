@@ -8,8 +8,6 @@
   <img src="assets/hero.png" alt="skill-doctor —— AI agent skill 的体检工具:诊断 SKILL.md 触发可靠性、路由召回、包结构" width="760" />
 </p>
 
-> *「模型从不触发的 skill,只是一份死掉的文档。」*
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/works_on-Claude_Code_·_Codex_·_Hermes_·_OpenClaw-blueviolet.svg)]()
 [![Checks](https://img.shields.io/badge/checks-4%20deterministic-2ea44f.svg)]()
@@ -17,11 +15,11 @@
 
 <br>
 
-**给你的 agent skill 做体检:让模型真能触发它、读完它、干净地路由穿过它。**
+**给一个 agent skill 做体检:让模型可靠地触发它、读完它、路由穿过它。**
 
 <br>
 
-坏掉的 skill 从不报错。它只是不触发,或者模型读了一半就走开——你几周后才发现,自己写的 skill 一次都没被叫起来过。skill-doctor 就是逮住这件事的那道关。它给 `SKILL.md` 的触发可靠性打分,对每个 reference 文件跑一次路由召回测试,给毛病命名,路由断了就重构整个包。确定性脚本扛起核心检查,一个都不需要 API key,而且在 Claude Code、Codex、Hermes、OpenClaw 上跑法一致。
+skill-doctor 是一个元 skill——它审查另一个 skill 的 `SKILL.md`、references 和 scripts。它评估模型会不会触发这个 skill、会不会读完正文、能不能路由到正确的 reference;指出哪里有问题,路由断了就重构整个包。核心检查是带退出码的确定性脚本,不需要 API key。它在 Claude Code、Codex、Hermes、OpenClaw 上跑法一致。
 
 <br>
 
@@ -297,14 +295,6 @@ skill-doctor/
 ---
 
 <div align="center">
-
-> *模型从不触发的 skill,只是一份死掉的文档。*
-
-<br>
-
-⭐ 如果 skill-doctor 在你某个 skill 里逮出了一步死掉的流程,给它点个 star。
-
-<br>
 
 **Zane456** —— [clear-chinese](https://github.com/Zane456/clear-chinese) 作者
 
