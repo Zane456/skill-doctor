@@ -4,9 +4,9 @@ English | [简体中文](README.zh-CN.md)
 
 # skill-doctor
 
-<img src="assets/hero.png" alt="skill-doctor — a health check for AI agent skills: trigger reliability, routing, package structure" width="640" />
+<img src="assets/hero.png" alt="skill-doctor — diagnostics for AI agent skills: trigger reliability, routing, package structure" width="640" />
 
-**A health check for AI agent skills — so the model reliably triggers, reads, and routes through the skills you write.**
+**Give your skill a solid structure.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Works on](https://img.shields.io/badge/works_on-Claude_Code_·_Codex_·_Hermes_·_OpenClaw-blueviolet.svg)]()
@@ -18,17 +18,16 @@ English | [简体中文](README.zh-CN.md)
 
 ## Features
 
-- **Skills that actually get used** — it audits how your skill is described so the model triggers it when it should, instead of leaving it installed and ignored.
-- **Nothing eats your context** — it finds what runs too long or needs splitting, so the model reads the whole thing and lands on the right part instead of giving up halfway.
-- **Stable and free to run** — the core checks don't depend on the model's mood and need no API key; run the same skill twice and the verdict matches.
-- **It tells you what to fix, why, and how** — you get a priority-sorted list of real problems with concrete fixes, not a vague score.
-- **Same on every platform, and it never touches your files first** — Claude Code, Codex, Hermes, and OpenClaw all run it the same way, and it always asks before editing.
+- Audits your skill's docs against the spec and flags which files to split
+- Draws on the LLM-wiki index pattern so every file stays reachable by routing
+- Grounds every check it makes in Anthropic's official spec and best practices
+- Verifies your skill will be recognized and invoked inside a crowded global setup
 
 ---
 
 ## What It Is
 
-skill-doctor is a skill that gives your other skills a health check. You write a skill, but you can't tell whether the model will trigger it when it should, read the body in full, or find the right reference file — and these failures never throw an error, so you never notice them. skill-doctor finds them one by one, sorts them by severity, explains why each one is a problem and how to fix it, and edits your files only after you say so. It's for anyone who writes their own skills.
+skill-doctor is a skill that audits the skills you write. You write a skill, but you can't tell whether the model will trigger it when it should, read the body in full, or find the right reference file. These failures never throw an error, so you never notice them. skill-doctor finds them one by one, sorts them by severity, explains why each one is a problem and how to fix it, and edits your files only after you say so. It only reshapes structure, never behavior: it reorganizes your skill into a cleaner, more standard layout, but what the skill does and how it does it stay exactly the same. It's for anyone who writes their own skills.
 
 ---
 
@@ -39,10 +38,10 @@ You: check this skill for me
 
 skill-doctor:
 
-Health check done — 3 problems:
+Audit complete — 3 problems:
 
 1. The description runs 1,100 characters — too long
-   → it loads into context every time and eats your budget;
+   → it loads into context every time and takes up your budget;
      a few hundred characters is plenty
 
 2. SKILL.md is 680 lines — over the limit
@@ -86,7 +85,7 @@ skill-doctor/
 │   ├── detect_platform.py            # which platform + its listing-budget rule
 │   ├── check_routes.py               # reachability / orphans / dangling / compass cap
 │   ├── check_listing_budget.py       # listing-budget across platforms
-│   ├── check_desc_slim.py            # description-slimming gate
+│   ├── check_desc_slim.py            # description-shortening gate
 │   └── eval_retrieval.py             # optional LLM routing-recall vote (bring your own key)
 ├── assets/
 │   └── hero.png                      # README hero image

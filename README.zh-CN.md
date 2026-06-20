@@ -4,9 +4,9 @@
 
 # skill-doctor
 
-<img src="assets/hero.png" alt="skill-doctor — 给 AI agent skill 做体检:触发可靠性、路由、包结构" width="640" />
+<img src="assets/hero.png" alt="skill-doctor — 诊断 AI agent skill:触发可靠性、路由、包结构" width="640" />
 
-**给 AI agent skill 做体检——让模型可靠地触发、读完、用对你写的 skill。**
+**给 skill 一个优质的结构。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![运行平台](https://img.shields.io/badge/works_on-Claude_Code_·_Codex_·_Hermes_·_OpenClaw-blueviolet.svg)]()
@@ -18,17 +18,16 @@
 
 ## 特点
 
-- **装了就真的会被用** — 体检你的 skill 怎么写描述,让模型在该用时触发它,而不是装着却被晾在一边。
-- **内容不被上下文吃掉** — 查出哪里太长、哪里该拆,让模型读得完、找得到对的部分,不会读一半就放弃。
-- **结果稳定、跑起来不花钱** — 核心检查不靠模型临场发挥,也不要 API key;同一个 skill 跑两次,结论一致。
-- **直接告诉你改哪、为什么、怎么改** — 给的是按严重程度排好的问题清单加具体改法,不是一句泛泛评分。
-- **跨平台一致,且确认前不碰你的文件** — Claude Code、Codex、Hermes、OpenClaw 跑法都一样,动手改之前一定先问你。
+- 审查 skill 文档是否符合规范,判断哪些文件需要拆分
+- 参考 LLM Wiki 式索引,验证每个文件都能被路由检索到
+- 每条规则都援引 Anthropic 官方定义与最佳实践背书
+- 验证 skill 放进全局环境后能否被正常识别、调用
 
 ---
 
 ## 介绍
 
-skill-doctor 是一个给别的 skill 做体检的 skill。你写好一个 skill,却没法确定模型会不会在该用时调用它、会不会读完正文、能不能找到对的参考文件——这些问题平时不报错,你根本发现不了。skill-doctor 把它们一项项查出来,按严重程度排好,告诉你每个问题为什么是问题、该怎么改;你点头之后它才动手。它写给所有自己做 skill 的人。
+skill-doctor 是一个审查你写的 skill 的 skill。你写好一个 skill,却没法确定模型会不会在该用时调用它、会不会读完正文、能不能找到对的参考文件。这些问题平时不报错,你根本发现不了。skill-doctor 把它们一项项查出来,按严重程度排好,告诉你每个问题为什么是问题、该怎么改;你点头之后它才动手。它只重整结构,不动功能:把 skill 调成更规范的组织方式,该触发能触发、该读到的能读到,但 skill 本身做什么、怎么做,一个字都不改。它写给所有自己做 skill 的人。
 
 ---
 
@@ -39,7 +38,7 @@ skill-doctor 是一个给别的 skill 做体检的 skill。你写好一个 skill
 
 skill-doctor:
 
-体检完了,3 个问题:
+检查完成,3 个问题:
 
 1. description 写了 1100 字,太长
    → 这段每次都被固定塞进上下文、占预算,砍到几百字内就够
@@ -84,7 +83,7 @@ skill-doctor/
 │   ├── detect_platform.py            # 识别平台及其描述预算规则
 │   ├── check_routes.py               # 可达性 / 孤儿 / 断链 / 指南针上限
 │   ├── check_listing_budget.py       # 跨平台描述预算
-│   ├── check_desc_slim.py            # 描述瘦身的安全闸
+│   ├── check_desc_slim.py            # 缩短描述的安全闸
 │   └── eval_retrieval.py             # 可选的 LLM 路由召回投票(自带 key)
 ├── assets/
 │   └── hero.png                      # README 顶图
