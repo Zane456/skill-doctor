@@ -54,16 +54,21 @@ tokens (a few cents on a paid key like DeepSeek, free on a free provider). It ne
 an API key. Skip it and everything else still works fully."*
 
 - **No** → skip; say the standard checks all still run with zero setup.
-- **Yes** → collect base URL / model / key, write them to a local `.env` in the repo
-  (already gitignored):
+- **Yes** → collect base URL / model / key, write them to a `.env` file **inside the
+  installed skill folder** (`<install_target>/skill-doctor/.env` — the scripts read it
+  from there; already gitignored):
   ```
   EVAL_LLM_BASE_URL=https://api.deepseek.com
   EVAL_LLM_MODEL=deepseek-v4-flash
   EVAL_LLM_API_KEY=sk-...
   ```
-  Then say plainly: the key lives only in this local `.env`, skill-doctor never logs
-  it, commits it, or sends it anywhere except the base URL you set; `.env` is
-  gitignored so it won't be pushed.
+  (Already export these as real environment variables? That works too and takes
+  precedence — the `.env` is just the option that needs no shell setup.) Then say
+  plainly: the key lives only in this local `.env`, skill-doctor never logs it,
+  commits it, or sends it anywhere except the base URL you set; `.env` is gitignored
+  so it won't be pushed. Verify it took — running
+  `python3 scripts/eval_retrieval.py <skill_dir> --llm` should now show the deeper
+  check **running**, not "SKIPPED (not configured)".
 
 ### Step 5 — Context window note (only if Step 1 said "unknown")
 If the platform's context window came back unknown, tell the user the budget check

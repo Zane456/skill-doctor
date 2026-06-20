@@ -161,12 +161,40 @@ def level1_keyword(entries):
     return hits, len(entries)
 
 
+def _load_env_file_into_environ():
+    """Best-effort load of EVAL_LLM_* from a `.env` file, so a user who writes the
+    key into a file (instead of exporting it) is still picked up. Zero-dependency.
+
+    Real environment variables always win — a `.env` value is used only when the var
+    is unset. Looks in the skill dir (next to scripts/) and the current dir. Only
+    EVAL_LLM_* keys are read; everything else in the file is ignored.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    for path in (os.path.join(here, os.pardir, ".env"),
+                 os.path.join(os.getcwd(), ".env")):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                raw_lines = fh.readlines()
+        except OSError:
+            continue
+        for raw in raw_lines:
+            line = raw.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            key = key.strip()
+            if key.startswith("EVAL_LLM_") and key not in os.environ:
+                os.environ[key] = val.strip().strip('"').strip("'")
+
+
 def read_llm_config():
     """Return (base_url, model, api_key) from EVAL_LLM_* env vars; '' for any unset.
 
     Reads the key at runtime only — never stored, logged, or sent anywhere except
-    to base_url. No per-machine fallback: configure via the environment.
+    to base_url. Config source: real env vars, or a local `.env` in the skill dir
+    (real env vars win — see _load_env_file_into_environ).
     """
+    _load_env_file_into_environ()
     return (
         os.environ.get("EVAL_LLM_BASE_URL", "").strip(),
         os.environ.get("EVAL_LLM_MODEL", "").strip(),
