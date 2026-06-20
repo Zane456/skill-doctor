@@ -10,7 +10,7 @@ Diagnose and improve any SKILL.md. **A compass, not a manual** — the concrete 
 ## Diagnosis flow after triggering (each step must produce visible output)
 
 > A step with no visible output gets silently skipped (Seleznov experiment, 2026). Print one confirmation line per step.
-> **Self-review flag**: if this session has already Edited/Written the target SKILL.md, **prefix every doctor print line with `[self-review]`**, and append one line at the end of Step 3: "conclusion is self-assessed, recommend re-reviewing with a fresh sub-agent."
+> **Self-review flag**: if this session has already Edited/Written the target SKILL.md, **prefix every doctor print line with `[self-review]`**, and append one line at the end of Step 3: "conclusion is self-assessed, recommend re-reviewing with a fresh sub-agent." Credibility is discounted, visibility is forced.
 
 ### Step 1: Read the target SKILL.md, announce the diagnosis start
 
@@ -32,7 +32,7 @@ After loading, print one line:
 ### Step 2.5: Dry-run walkthrough (only when body contains a workflow)
 
 Following `references/effect-dry-run.md`, take the 1 most typical prompt and walk it through the body steps, checking whether input/instruction/output connect.
-Any broken link or ambiguity → mark **P0** (effect problem) and put it in the ❌ section of Step 3.
+Any broken link or ambiguity → mark **P0** (effect problem) and put it in the Code layer (P0 bucket) of Step 3.
 Print one line:
 ```
 [skill-doctor] Dry-run prompt: "<prompt>"  broken links=<N>
@@ -51,29 +51,12 @@ Check whether the target appears in this session's available-skills list **with 
 
 ### Step 3: Output the diagnosis report
 
-Format strictly as below, print to the conversation:
+Present per `references/output-format.md` — a **layered report in lesstoken style, in the user's reply language**: verdict → quality scores → **Code layer** (P0→P3 findings with file:line/field — the evidence) → **Decision layer** split **✅ Safe to fix now** vs **🤔 Needs your decision** → closing question. Actionable parts last.
 
-```
-[skill-doctor] Diagnosis
-
-❌ Must fix (sorted P0→P3, definitions in references/priority-tiers.md)
-  [P0 effect break]   <issue>: <why> → <fix>
-  [P1 structure]      <issue>: <why> → <fix>
-  [P2 specificity]    <issue>: <why> → <fix>
-  [P3 affects execution] <issue>: <why> → <fix>
-
-⚠️ Suggested improvements (including purely cosmetic / verbose P3)
-  - <issue>: <why> → <fix>
-
-✅ Checks passed
-  - <list>
-```
-
-**P3 placement rule**: ask "if not fixed, will the next LLM running this skill do something wrong?" — yes → ❌; merely ugly/verbose → ⚠️. See `references/priority-tiers.md`.
-
-Each issue must give a **specific line number or field** — no vagueness. **When the same kind of violation appears in multiple places, list them separately** — e.g. content miscategorized in three subdirectories should be 3 issues, not 1 merged entry.
-
-**Name the failure mode** when one applies (see `references/predictability-glossary.md`): prefix the finding with `[no-op]` / `[sediment]` / `[premature-completion]` / `[weak-leading-word]` / `[duplication]` / `[sprawl]`. The name says *what kind*; the P-tier still says *how bad* — orthogonal, so the prefix never replaces the tier.
+Substance that fills the layers:
+- Each finding: stable ID (`P0-1` …), a **specific line number or field** (no vagueness), risk circle 🟢/🟡/🔴, sorted P0→P3 (`references/priority-tiers.md`). Same violation in N places → **N separate findings**, never merge.
+- **Name the failure mode** when one applies (`references/predictability-glossary.md`): prefix `[no-op]`/`[sediment]`/`[premature-completion]`/`[weak-leading-word]`/`[duplication]`/`[sprawl]`. Prefix = what kind, P-tier = how bad; never replaces the tier.
+- Each 🤔 item separates **mechanism** (how the skill behaves now) from **consequence** (what the next LLM does wrong at run time), then options + rec.
 
 ### Step 4: Apply with Edit after user confirmation
 

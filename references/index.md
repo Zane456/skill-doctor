@@ -32,7 +32,7 @@ policy** docs are pulled by the step or section that names them.
   when-to-read: a body containing a workflow; checking input→instruction→output actually link when run.
   keywords: dry-run, walkthrough, broken link, effect coherence, most-typical prompt, P0.
 - [priority-tiers.md](priority-tiers.md) — P0–P3 definitions and where a finding goes.
-  when-to-read: deciding a finding's severity, or whether a P3 belongs in ❌ or ⚠️.
+  when-to-read: deciding a finding's severity, or whether a P3 is a real Code-layer finding or merely cosmetic (Low).
   keywords: P0, P1, P2, P3, priority tier, severity, placement rule, affects execution.
 - [predictability-glossary.md](predictability-glossary.md) — quality vocabulary beyond form: the failure modes.
   when-to-read: always; judging quality past form, or naming a defect (no-op, sediment, completion criterion, leading word).
@@ -58,6 +58,9 @@ policy** docs are pulled by the step or section that names them.
 - [rationale.md](rationale.md) — why this skill exists at all.
   when-to-read: background on why the skill exists — the LLM habit of writing a SKILL.md as a manual.
   keywords: rationale, why this skill exists, treats SKILL.md as a manual, long narration, background, philosophy.
+- [output-format.md](output-format.md) — Step 3 detail: the layered report shape (lesstoken, language-matched).
+  when-to-read: presenting the Step 3 diagnosis report; laying out verdict → scores → code layer → ✅/🤔 decision split.
+  keywords: output format, layered report, lesstoken, code layer, decision layer, safe to fix, needs decision, altitude, colon align, closing question.
 - [output-style.md](output-style.md) — how skill-doctor talks to the human (clear-style prose + opener).
   when-to-read: writing the conversational prose around a report — questions, confirmations, explanations.
   keywords: output style, clear-english, clear-chinese, opener, salutation, emoji, conclusion-first, terminal-safe, no metaphors.
