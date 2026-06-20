@@ -98,16 +98,21 @@ Every claim below traces to a script or a reference file in this repo.
 
 skill-doctor runs a fixed diagnosis flow, and every step prints a line — a step with no visible output is a step the model silently skips.
 
-```mermaid
-graph LR
-    A[SKILL.md +<br/>references/ + scripts/] --> B((skill-doctor))
-    B --> C[Deterministic scripts<br/>routes / budget / slim]
-    B --> D[GLM routing-recall<br/>vote 3x per file]
-    B --> E[Judgment dimensions<br/>trigger / failure modes]
-    C --> F[P0-P3 Diagnosis<br/>+ named failure mode]
-    D --> F
-    E --> F
-    F --> G[Apply after you confirm<br/>then re-verify routing]
+```text
+SKILL.md + references/ + scripts/
+        |
+        v
+   skill-doctor
+        |
+   |-- deterministic scripts   (routes · budget · slim)
+   |-- GLM routing-recall       (vote 3x per file)
+   |-- judgment dimensions      (trigger · failure modes)
+        |
+        v
+   P0-P3 diagnosis  +  named failure mode
+        |
+        v
+   apply after you confirm  ->  re-verify routing
 ```
 
 **1. Read and budget** — reads the whole SKILL.md, then counts every installed description against the listing budget, so it judges one skill knowing the crowd it competes with.

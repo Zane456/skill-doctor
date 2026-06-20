@@ -98,16 +98,21 @@ export GLM_API_KEY=你的_zai_key   # 可选，只给路由召回测试用
 
 skill-doctor 跑一条固定的诊断流程，每一步都打印一行 —— 没有可见输出的步骤，就是模型会偷偷跳过的步骤。
 
-```mermaid
-graph LR
-    A[SKILL.md +<br/>references/ + scripts/] --> B((skill-doctor))
-    B --> C[确定性脚本<br/>路由 / 预算 / 瘦身]
-    B --> D[GLM 路由召回<br/>每文件投 3 票]
-    B --> E[判断维度<br/>触发 / 失效模式]
-    C --> F[P0-P3 诊断<br/>+ 失效模式命名]
-    D --> F
-    E --> F
-    F --> G[你确认后才改<br/>改完重验路由]
+```text
+SKILL.md + references/ + scripts/
+        |
+        v
+   skill-doctor
+        |
+   |-- 确定性脚本      (路由 · 预算 · 瘦身)
+   |-- GLM 路由召回    (每文件投 3 票)
+   |-- 判断维度        (触发 · 失效模式)
+        |
+        v
+   P0-P3 诊断  +  失效模式命名
+        |
+        v
+   你确认后才改  ->  重验路由
 ```
 
 **1. 读全文 + 算预算** —— 读完整个 SKILL.md，再把所有已装 description 算进 listing 预算，带着「它跟谁挤」的背景判断这一个 skill。
