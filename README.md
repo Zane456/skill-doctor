@@ -25,9 +25,25 @@ A broken skill never errors. It just doesn't fire, or the model reads half of it
 
 <br>
 
-[See it in action](#see-it-in-action) · [Up and running](#up-and-running) · [What it catches](#what-it-catches) · [How it works](#how-it-works) · [Reference](#reference)
+[Highlights](#highlights) · [See it in action](#see-it-in-action) · [Up and running](#up-and-running) · [What it catches](#what-it-catches) · [How it works](#how-it-works) · [Reference](#reference)
 
 </div>
+
+---
+
+## Highlights
+
+The essence is structure — shape a skill so it matches how the model loads and routes it: loaded on demand, routed by rule, never the whole file at once.
+
+1. **Core: the structure matches how the model calls and loads a skill.** SKILL.md is a compass; the details sink into `references/`, read on demand by their `when-to-read` condition — the model loads only the part it needs, never the whole file.
+2. **Judged against existing rules, not guesswork:**
+   - Anthropic's official rules for a good skill;
+   - how Claude Code and similar tools decide to trigger a skill;
+   - the Seleznov 650-trial experiment (trigger rate ~50% → ~100%).
+   - (The routing tiers borrow the wiki-index idea; no source is claimed.)
+3. **Control length to keep context clean.** It checks whether `SKILL.md` or the description runs too long, so loading does not push dead text into a limited context budget.
+4. **Every self-check exists to verify routing — can the right file be triggered.** Not vague "self-honesty": it confirms each reference is reached by the scenario it declares.
+5. **It also governs the wording the model prefers.** Writing a skill in phrasing the model triggers and parses more reliably is part of the structural standard.
 
 ---
 
