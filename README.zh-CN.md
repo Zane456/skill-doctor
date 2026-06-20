@@ -4,26 +4,13 @@
 
 # skill-doctor
 
-<p align="center">
-  <img src="assets/hero.png" alt="skill-doctor —— AI agent skill 的体检工具:诊断 SKILL.md 触发可靠性、路由召回、包结构" width="760" />
-</p>
+<img src="assets/hero.png" alt="skill-doctor — 给 AI agent skill 做体检:触发可靠性、路由、包结构" width="640" />
+
+**给 AI agent skill 做体检——让模型可靠地触发、读完、用对你写的 skill。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/works_on-Claude_Code_·_Codex_·_Hermes_·_OpenClaw-blueviolet.svg)]()
-[![Checks](https://img.shields.io/badge/checks-4%20deterministic-2ea44f.svg)]()
-[![Type](https://img.shields.io/badge/type-meta--skill-blue.svg)]()
-
-<br>
-
-**给一个 agent skill 做体检:让模型可靠地触发它、读完它、路由穿过它。**
-
-<br>
-
-skill-doctor 是一个元 skill——它审查另一个 skill 的 `SKILL.md`、references 和 scripts。它评估模型会不会触发这个 skill、会不会读完正文、能不能路由到正确的 reference;指出哪里有问题,路由断了就重构整个包。核心检查是带退出码的确定性脚本,不需要 API key。它在 Claude Code、Codex、Hermes、OpenClaw 上跑法一致。
-
-<br>
-
-[特点](#特点) · [看它跑一遍](#看它跑一遍) · [装好就用](#装好就用) · [它能逮住什么](#它能逮住什么) · [怎么运作](#怎么运作) · [速查](#速查)
+[![运行平台](https://img.shields.io/badge/works_on-Claude_Code_·_Codex_·_Hermes_·_OpenClaw-blueviolet.svg)]()
+[![核心检查](https://img.shields.io/badge/core_checks-no_API_key-2ea44f.svg)]()
 
 </div>
 
@@ -31,278 +18,103 @@ skill-doctor 是一个元 skill——它审查另一个 skill 的 `SKILL.md`、r
 
 ## 特点
 
-本质是「结构」——让 skill 结构符合大模型的调用逻辑:按需加载、按规则路由,不把全文一次性塞进上下文。
-
-1. **核心 = 让 skill 结构符合大模型的调用/加载逻辑。** SKILL.md 当"指南针",细则下沉到 `references/`,靠 `when-to-read` 条件按需读——模型用到哪一块才加载哪一块,不把全文塞进上下文。
-2. **判定依据是现成规则,不是拍脑袋:**
-   - Anthropic 对「优质 skill」的官方规则规定;
-   - Claude Code 等 AI 工具「触发 skill」的原则;
-   - Seleznov 650 次触发实验(触发率约 50% → 约 100%)这套经验数据。
-3. **控制表达长度 = 防上下文污染。** 检查 `SKILL.md` / description 会不会写太长,避免加载时塞进大量无效信息、挤占有限的上下文预算。
-4. **轮巡/自我检查的本质 = 验路由能否被正确触发。** 确认每个 reference 按它声明的场景能被准确路由命中。
-5. **还管「大模型更爱什么语言」。** 写 skill 时用模型更易触发、更易解析的措辞,也是结构规范的一部分。
+- **装了就真的会被用** — 体检你的 skill 怎么写描述,让模型在该用时触发它,而不是装着却被晾在一边。
+- **内容不被上下文吃掉** — 查出哪里太长、哪里该拆,让模型读得完、找得到对的部分,不会读一半就放弃。
+- **结果稳定、跑起来不花钱** — 核心检查不靠模型临场发挥,也不要 API key;同一个 skill 跑两次,结论一致。
+- **直接告诉你改哪、为什么、怎么改** — 给的是按严重程度排好的问题清单加具体改法,不是一句泛泛评分。
+- **跨平台一致,且确认前不碰你的文件** — Claude Code、Codex、Hermes、OpenClaw 跑法都一样,动手改之前一定先问你。
 
 ---
 
-## 看它跑一遍
+## 介绍
 
-对着一个 skill 一指,它打出的是诊断,不是语法报告:
+skill-doctor 是一个给别的 skill 做体检的 skill。你写好一个 skill,却没法确定模型会不会在该用时调用它、会不会读完正文、能不能找到对的参考文件——这些问题平时不报错,你根本发现不了。skill-doctor 把它们一项项查出来,按严重程度排好,告诉你每个问题为什么是问题、该怎么改;你点头之后它才动手。它写给所有自己做 skill 的人。
 
-```text
-[skill-doctor] Auditing: my-skill/SKILL.md   body=142 lines   description=64 chars
-[skill-doctor] Budget: 38 skills installed, 31k chars vs ≈40k → fits
-[skill-doctor] Dry-run prompt: "use my-skill to tag the photo"   broken links=1
+---
 
-[skill-doctor] Diagnosis
+## 展示
 
-❌ Must fix (P0→P3)
-  [P0 effect break]   Step 3 读一个 Step 1 从没写过的文件 → 流程走到死胡同
-  [P1 trigger]        description 没有反向约束 → 触发率约 50%,而非约 100%
-  [P2 specificity]    "process the image" 没有命令 → 给一个(例:`sips -s format png`)
+```
+你:帮我检查一下这个 skill
 
-⚠️ Suggested
-  - [no-op] body 开头写 "This skill helps you…"——模型会跳过 → 删掉这行
-  - [sprawl] references/tips.md 混了 3 个不相关主题 → 按主题各拆一个文件
+skill-doctor:
 
-✅ Passed
-  - 路由:2 跳,0 orphan,0 断链
-  - 每个流程步骤都有可见输出
+体检完了,3 个问题:
+
+1. description 写了 1100 字,太长
+   → 这段每次都被固定塞进上下文、占预算,砍到几百字内就够
+
+2. SKILL.md 正文 680 行,超了
+   → 一部分细节挪进 references/ 按需加载,不用每次全读进来
+
+3. references 里有个文件谁都不会读到(孤儿)
+   → 要么挂上路由,要么删
+
+要我动手改吗?(确认前不碰你的文件)
 ```
 
-它不会告诉你少了个逗号。它告诉你模型会**悄悄跳过 Step 3**,你的 description **只有一半概率触发**——然后说清为什么。
-
 ---
 
-## 装好就用
-
-**最省事 —— 让 agent 帮你装。** 克隆仓库,在你的 agent(Claude Code / Codex / Hermes / OpenClaw)里打开,说一句*「装一下 skill-doctor」*。它会探测你的平台、装进正确的 skills 目录、再问你要不要开可选的 AI 检查。流程写在 [GETTING_STARTED.md](GETTING_STARTED.md) 里,装完即可删。
-
-**手动** —— skill 的安装就是把它放进 skills 文件夹:
-
-```bash
-git clone https://github.com/Zane456/skill-doctor.git ~/.claude/skills/skill-doctor
-# Codex / OpenClaw: ~/.agents/skills/skill-doctor   ·   Hermes: ~/.hermes/skills/skill-doctor
-```
-
-脚本跑在 Python 3 上,零依赖。每个核心检查(路由、预算、结构)**都不用 key**。
-
-**可选 —— 一个更深的 AI 检查。** 在免费检查之外,skill-doctor 还能让一个 LLM **真测一遍**"模型会不会给每个任务挑对 reference",抓出关键词查不出的、易混淆的措辞。**几乎不花钱**:一轮大约几万 token —— 付费 key 几分钱,免费厂商免费。自带任意 OpenAI 兼容厂商的 key 即可:
-
-```bash
-export EVAL_LLM_BASE_URL=https://api.deepseek.com   # 以 DeepSeek 为例;Groq / OpenRouter / Gemini / z.ai 都行
-export EVAL_LLM_MODEL=deepseek-v4-flash             # 便宜款
-export EVAL_LLM_API_KEY=sk-...                      # 在 platform.deepseek.com 申请
-```
-
-key 只在运行时从环境变量读 —— skill-doctor **不落盘、不写日志、不提交进仓库**,也只发往你设的 base URL(`.env` 已在 `.gitignore` 里)。
-
-然后在你的 agent 里让它审一个 skill,说一句*「审查这个 skill」*,或直接 invoke `skill-doctor`。**你不说,它绝不动你的文件。**
-
----
-
-## 它能逮住什么
-
-那些从不会自己喊出来的故障:
-
-| 你根本不会注意到的症状 | 它会标出 |
-| :--- | :--- |
-| skill 大概一半时候才触发 | description 没有反向约束,或写成 "Use when" 而非 "ALWAYS invoke"——约 50% vs 约 100% 触发率([650 次实验](https://medium.com/@marc.bara.iniesta/claude-skills-have-two-reliability-problems-not-one-299401842ca8)) |
-| 它压根不自动触发 | description 用第一人称,或整份清单超预算被降成只剩名字 |
-| 模型读一半就走开 | body 超过约 500 行——`[sprawl]` |
-| 某个 reference 文件从没被读到 | orphan 或断链,`check_routes.py` 抓出来 |
-| 某个流程步骤被跳过 | 这步没有可见输出,模型就走过去了 |
-| agent 提前结束某一步 | 收尾条件太模糊——`[premature-completion]` |
-| 一行什么都没改变的指令 | 模型默认本来就会做——`[no-op]` |
-
-每一项检查、阈值、规则,下面[速查](#速查)里全列了。
-
----
-
-## 怎么运作
-
-每一步都打印一行——一个没有可见输出的步骤,就是一个会被模型悄悄跳过的步骤。
-
-```text
-  SKILL.md + references/ + scripts/
-        |
-        v
-  确定性脚本 .......... detect · routes · budget · slim      (带退出码,无 LLM)
-        |
-        v
-  LLM 路由召回 ........ 每个 reference 文件投票 3 次          (可选,自带 key)
-        |
-        v
-  判断维度 ............ 触发强度 · 失效模式                   (按需加载)
-        |
-        v
-  Dry-run 一条真 prompt  Step N 是否拿到了前面没产出过的输入?
-        |
-        v
-  P0 -> P3 诊断 ....... 每条都带上它的失效模式名字
-        |
-        v
-  确认后才应用 ........ 然后重跑 check_routes 复验
-```
-
-两个设计让它的结论值得信:
-
-- **能确定的就确定。** 字符数、路由、预算,由带退出码的脚本定,不靠每次都会飘的主观判断。
-- **不能确定的就诚实。** 如果 skill-doctor 在同一个会话里已经改过你的 skill,它会给报告每一行盖上 `[self-review]`,并提醒你换一个全新 agent 复核。它**故意给自己的结论打折**。
-
-<!-- ============ 速查区——查东西时再看,平时可跳过 ============ -->
-
----
-
-## 速查
-
-下面全是查阅资料,用这个 skill 不需要读它。
-
-### 诊断流程
-
-| 步骤 | 做什么 | 输出 |
-| :--- | :--- | :--- |
-| 1 | 读目标 SKILL.md;把每个已装 description 对照清单预算数一遍 | body/description 体积 + 预算结论 |
-| 2 | 只加载 `when-to-read` 命中的维度 | 加载/跳过清单 |
-| 2.5 | Dry-run:把最典型那条 prompt 在 body 里走一遍 | 断链数(有就 P0) |
-| 2.6 | Live-injection:本会话目标的 description 是真注入了,还是被降成只剩名字 | injected / dropped / skipped |
-| 3 | 打出 P0→P3 诊断(❌ 必修 · ⚠️ 建议 · ✅ 通过),每条带失效模式名 | 报告 |
-| 4 | 确认后才用 Edit 应用修复——然后重跑 `check_routes.py` | 已修复行数 |
-
-### 自带脚本
-
-无 LLM、无第三方依赖,`eval_retrieval.py` 除外(它按需调模型)。
-
-| 脚本 | 检查什么 | 命令 | 退出码 |
-| :--- | :--- | :--- | :--- |
-| `check_routes.py` | 可达性、orphan、断链、6000 字符 compass 上限;`--before <snapshot>` 加一道内容守恒检查 | `python3 scripts/check_routes.py <skill_dir>` | 0 干净 / 1 有问题 |
-| `check_listing_budget.py` | description 总字符 vs 该平台的清单预算;列出超 300 字符带的 description——**CC · Codex · Hermes · OpenClaw**(见下注) | `python3 scripts/check_listing_budget.py <root>` | 0 装得下 / 1 超出 / 2 不可用 |
-| `detect_platform.py` | 探测装的是哪个平台及其清单预算规则(供 `check_listing_budget.py` 用) | `python3 scripts/detect_platform.py` | 打印结果 |
-| `check_desc_slim.py` | 给 description 瘦身上一道闸——保留的文字必须逐字不变,触发词必须存活 | `python3 scripts/check_desc_slim.py <before> <after>` | 0 干净 / 1 不安全 |
-| `eval_retrieval.py` | 问一个 LLM(任意 OpenAI 兼容,3 次多数投票)路由能不能凭 `when-to-read` 场景找到每个 reference | `python3 scripts/eval_retrieval.py <skill_dir> --llm` | 0 干净 / 1 有漏 |
-
-> **预算检查是平台感知的。** 四个平台都会把每个 skill 的名字+描述塞进系统提示、都有预算、超了都会降级,只是常量不同:Claude Code ≈ 上下文的 1%(静默砍成只剩名字),Codex ≈ 2% 或 8000 字符(先缩描述再省略 skill 并报警),OpenClaw 用 `maxSkillsPromptChars` 上限,Hermes 直接量它的注入快照。`detect_platform.py` 自动选对规则;平台或上下文窗口未知时,它会问你。其余脚本、所有判断维度,都是跨平台通用的。
-
-### 什么样的 description 才触发
-
-可靠性上最大的那个杠杆——是测出来的,不是猜的([Seleznov,650 次实验](https://medium.com/@marc.bara.iniesta/claude-skills-have-two-reliability-problems-not-one-299401842ca8)):
-
-| description 写法 | 触发率 |
-| :--- | :--- |
-| `"[做什么]. Use when [何时]."`(Anthropic 默认) | 约 50% |
-| `"[领域] expert. ALWAYS invoke when [触发]. Do not [默认动作] directly."`(Seleznov) | 约 100% |
-
-最反直觉的是那条反向约束(`Do not … directly`)——去掉它,触发率就塌回约 50%。
-
-### 硬规则
-
-这里违反一条就是错,不是建议。
-
-| 规则 | 出处 |
-| :--- | :--- |
-| description ≤ 1024 字符(Claude Code ≥ 2.1.105 收到 1536) | Anthropic spec / CC release notes |
-| 清单预算超标一律上报——这是全局事实,靠全局瘦身解决,绝不靠改单个 skill | CC issues #56710 / #47627 |
-| description 用第三人称 | Anthropic best practices |
-| name 只用小写字母、数字、连字符 | Anthropic spec |
-| body < 500 行 | Anthropic / 社区共识 |
-| 路由深度 ≤ 2 跳(SKILL.md → index.md → 文件);禁止嵌套索引 | structure-surgery |
-| 零断链、零 orphan 子文档 | structure-surgery 铁律 |
-| description 写在单一逻辑 YAML 行(不用 `>` 或 `|`) | Prettier 重排会弄坏 |
-| 多步流程每一步都要有可见输出 | Seleznov 实验 |
-| skill 对自己性能的声明必须指向仓库内证据,否则删掉 | evidence-gating |
-
-### 它会命名的失效模式
-
-P 级说**有多严重**,名字说**是哪一类**。
-
-- `[no-op]` —— 模型默认本来就会做的一行
-- `[sediment]` —— 漂出相关性的陈旧行
-- `[sprawl]` —— 单纯太长,哪怕每行都还有用
-- `[duplication]` —— 同一个意思出现在不止一处
-- `[premature-completion]` —— 收尾条件模糊到 agent 提前收工
-- `[weak-leading-word]` —— 锚点词太弱,压不过模型默认
-
-### 优先级分级
-
-| 级别 | 含义 | 进 ❌ |
-| :--- | :--- | :--- |
-| **P0** | 效果断裂(跑起来流程接不上) | 总是 |
-| **P1** | 违反结构硬规则 | 总是 |
-| **P2** | 不够具体(没命令、没 I/O 规格) | 总是 |
-| **P3** | 可读性 | 只有当它改变下一次运行的结果时;否则进 ⚠️ |
-
-### 维度(按 `when-to-read` 条件按需加载)
-
-`references/index.md` 路由到下面全部;只有条件命中的才会被读。
-
-| Reference | 管什么 |
-| :--- | :--- |
-| `description-templates.md` | 触发强度模板 + 清单预算算法 |
-| `body-quality-checklist.md` | body 体积、什么该挪进 references |
-| `visible-output-rule.md` | 每个流程步骤都得有输出 |
-| `yaml-pitfalls.md` | frontmatter 格式坑 |
-| `hard-code-vs-llm-judgment.md` | 该写成脚本,还是留给模型 |
-| `assets-vs-references.md` | 模板 vs reference 文档怎么分 |
-| `structure-surgery.md` | 拆分、路由分层、2 跳上限 |
-| `effect-dry-run.md` | 把一条 prompt 在流程里走一遍 |
-| `priority-tiers.md` | P0–P3 定义与归类 |
-| `predictability-glossary.md` | 失效模式词汇表 |
-| `hard-rules.md` | 量化的必过规则 |
-| `exception-fallback.md` | 路径或脚本出错时怎么办 |
-| `language-policy.md` | 默认英文及其例外 |
-| `apply-safety.md` | 体积闸、删除前检查、闭环收尾 |
-| `live-injection-check.md` | 本会话 description 是否真被注入 |
-| `output-style.md` | skill-doctor 给人看时的输出风格 |
-| `rationale.md` | 这个 skill 为什么存在 |
-
-### 仓库结构
+## 仓库结构
 
 ```text
 skill-doctor/
-├── GETTING_STARTED.md                    # 一次性、agent 驱动的安装引导(装完可删)
-├── SKILL.md                              # compass:诊断流程 + 路由
-├── references/
-│   ├── index.md                          # 按 when-to-read 路由到每个维度
-│   ├── apply-safety.md
-│   ├── assets-vs-references.md
-│   ├── body-quality-checklist.md
-│   ├── description-templates.md
-│   ├── effect-dry-run.md
-│   ├── exception-fallback.md
-│   ├── hard-code-vs-llm-judgment.md
-│   ├── hard-rules.md
-│   ├── language-policy.md
-│   ├── live-injection-check.md
-│   ├── output-style.md
-│   ├── predictability-glossary.md
-│   ├── priority-tiers.md
-│   ├── rationale.md
-│   ├── structure-surgery.md
-│   ├── visible-output-rule.md
-│   └── yaml-pitfalls.md
-├── scripts/
-│   ├── detect_platform.py                # 探测平台 + 它的清单预算规则
-│   ├── check_routes.py                   # 可达性 / orphan / 断链 / compass 上限
-│   ├── check_listing_budget.py           # 清单预算(CC · Codex · Hermes · OpenClaw)
-│   ├── check_desc_slim.py                # description 瘦身闸
-│   └── eval_retrieval.py                 # 可选的 LLM 路由召回投票(自带 key)
+├── SKILL.md                          # 指南针:诊断流程 + 路由
+├── GETTING_STARTED.md                # 一次性的 agent 引导安装(装完可删)
+├── references/                       # 判断维度,按需加载
+│   ├── index.md                      # 按 when-to-read 路由到每个维度
+│   ├── apply-safety.md               # 改动前的尺寸闸、删除前检查、收尾闭环
+│   ├── assets-vs-references.md       # 区分模板素材与参考文档
+│   ├── body-quality-checklist.md     # 正文长度,以及哪些该下沉进 references
+│   ├── description-templates.md      # 触发强度模板 + 描述预算算法
+│   ├── effect-dry-run.md             # 拿一个真实 prompt 走一遍流程
+│   ├── exception-fallback.md         # 路径或脚本出错时怎么办
+│   ├── hard-code-vs-llm-judgment.md  # 哪些写成脚本,哪些交给模型判断
+│   ├── hard-rules.md                 # 量化的必过硬规则
+│   ├── language-policy.md            # 默认英文及其例外
+│   ├── live-injection-check.md       # 这次会话里描述到底有没有被注入
+│   ├── output-style.md               # skill-doctor 怎么跟人说话
+│   ├── predictability-glossary.md    # 失效模式词汇表
+│   ├── priority-tiers.md             # P0–P3 定义与归类
+│   ├── rationale.md                  # 这个 skill 为什么存在
+│   ├── structure-surgery.md          # 拆分、路由层级、2 跳上限
+│   ├── visible-output-rule.md        # 每个流程步骤都必须有可见输出
+│   └── yaml-pitfalls.md              # frontmatter 格式陷阱
+├── scripts/                          # 确定性检查,不用 LLM(eval_retrieval 除外)
+│   ├── detect_platform.py            # 识别平台及其描述预算规则
+│   ├── check_routes.py               # 可达性 / 孤儿 / 断链 / 指南针上限
+│   ├── check_listing_budget.py       # 跨平台描述预算
+│   ├── check_desc_slim.py            # 描述瘦身的安全闸
+│   └── eval_retrieval.py             # 可选的 LLM 路由召回投票(自带 key)
 ├── assets/
-│   └── hero.png
-├── LICENSE
-├── README.md
-└── README.zh-CN.md
+│   └── hero.png                      # README 顶图
+├── LICENSE                           # MIT
+├── README.md                         # 英文版
+└── README.zh-CN.md                   # 本文件(中文)
 ```
 
 ---
 
+## 安装
+
+**最简单——让 agent 自己装。** 把仓库 clone 下来,在你的 agent(Claude Code / Codex / Hermes / OpenClaw)里打开,说一句*"安装一下 skill-doctor"*。它会认出平台、装进对的 skills 目录,装完你可以删掉 `GETTING_STARTED.md`。
+
+**手动装** — skill 装在哪,就是把它放进你的 skills 目录:
+
+```bash
+git clone https://github.com/Zane456/skill-doctor.git ~/.claude/skills/skill-doctor
+# Codex / OpenClaw: ~/.agents/skills/skill-doctor    Hermes: ~/.hermes/skills/skill-doctor
+```
+
+脚本跑在 Python 3 上,零依赖,核心检查不要 API key。想开那个可选的、更深的 AI 检查,设三个环境变量接任意 OpenAI 兼容的服务(自带 key):
+
+```bash
+export EVAL_LLM_BASE_URL=https://api.deepseek.com
+export EVAL_LLM_MODEL=deepseek-v4-flash
+export EVAL_LLM_API_KEY=sk-...
+```
+
 <div align="center">
-
-**Zane456** —— [clear-chinese](https://github.com/Zane456/clear-chinese) 作者
-
-| 平台 | 链接 |
-| :--- | :--- |
-| 🐙 GitHub | [@Zane456](https://github.com/Zane456) |
-
-<br>
 
 MIT License © [Zane456](https://github.com/Zane456)
 
