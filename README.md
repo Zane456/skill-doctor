@@ -40,9 +40,8 @@ The essence is structure — shape a skill so it matches how the model loads and
    - Anthropic's official rules for a good skill;
    - how Claude Code and similar tools decide to trigger a skill;
    - the Seleznov 650-trial experiment (trigger rate ~50% → ~100%).
-   - (The routing tiers borrow the wiki-index idea; no source is claimed.)
 3. **Control length to keep context clean.** It checks whether `SKILL.md` or the description runs too long, so loading does not push dead text into a limited context budget.
-4. **Every self-check exists to verify routing — can the right file be triggered.** Not vague "self-honesty": it confirms each reference is reached by the scenario it declares.
+4. **Every self-check exists to verify routing — can the right file be triggered.** It confirms each reference is reached by the scenario it declares.
 5. **It also governs the wording the model prefers.** Writing a skill in phrasing the model triggers and parses more reliably is part of the structural standard.
 
 ---
