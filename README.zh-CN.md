@@ -11,7 +11,7 @@
 > *「触发不了的 skill，只是没人读的文档。」*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Claude%20Code%20%2B%20Codex-blueviolet.svg)]()
+[![Platform](https://img.shields.io/badge/works_on-Claude_Code_·_Codex_·_Hermes_·_OpenClaw-blueviolet.svg)]()
 [![Checks](https://img.shields.io/badge/checks-4%20deterministic-blue.svg)]()
 [![Type](https://img.shields.io/badge/type-meta--skill-green.svg)]()
 
@@ -21,7 +21,7 @@
 
 <br>
 
-skill-doctor 是一个 meta-skill,也就是一个用来管理其他 skill 的 skill。它按 LLM 真正读取 skill 的方式来检查 SKILL.md。普通 linter 只看 frontmatter 格式和死链。skill-doctor 深入到三件事:触发可不可靠、路由找不找得到、结构要不要重构。核心检查由四个确定性脚本完成,不需要任何 API key。
+skill-doctor 是一个 meta-skill,也就是一个用来管理其他 skill 的 skill。它按 LLM 真正读取 skill 的方式来检查 SKILL.md。普通 linter 只看 frontmatter 格式和死链。skill-doctor 深入到三件事:触发可不可靠、路由找不找得到、结构要不要重构。核心检查由确定性脚本完成、不需要任何 API key,且在 Claude Code、Codex、Hermes、OpenClaw 上都能用。
 
 <br>
 
@@ -37,7 +37,7 @@ skill-doctor 是一个 meta-skill,也就是一个用来管理其他 skill 的 sk
 
 ```text
 [skill-doctor] Auditing: my-skill/SKILL.md   body=142 lines   description=64 chars
-[skill-doctor] Budget: 38 skills installed, descriptions 31k vs ≈40k → fits
+[skill-doctor] Budget (claude_code): 38 skills, 31k vs ≈40k → fits
 
 [skill-doctor] Diagnosis
 
@@ -60,19 +60,28 @@ skill-doctor 是一个 meta-skill,也就是一个用来管理其他 skill 的 sk
 
 ## 装上就能跑
 
-skill 的安装,就是把它放进你的 skills 文件夹:
+**最省事 —— 让 agent 帮你装。** 克隆仓库,在你的 agent(Claude Code / Codex / Hermes / OpenClaw)里打开,说一句*「装一下 skill-doctor」*。它会探测你的平台、装进正确的 skills 目录、再问你要不要开可选的 LLM 检查。流程写在 [GETTING_STARTED.md](GETTING_STARTED.md) 里,装完即可删。
+
+**手动** —— skill 的安装就是把它放进 skills 文件夹:
 
 ```bash
 git clone https://github.com/Zane456/skill-doctor.git ~/.claude/skills/skill-doctor
+# Codex / OpenClaw: ~/.agents/skills/skill-doctor   ·   Hermes: ~/.hermes/skills/skill-doctor
 ```
 
-四个脚本跑在 Python 3 上,零依赖。核心检查(路由、预算、结构)什么都不用装。只有一个检查是可选的:GLM 路由召回测试要调用 LLM,所以它从环境变量读 key。
+脚本跑在 Python 3 上,零依赖。每个核心检查(路由、预算、结构)**都不用 key**。
+
+**可选 —— 一个更深的 AI 检查。** 在免费检查之外,skill-doctor 还能让一个 LLM **真测一遍**"模型会不会给每个任务挑对 reference",抓出关键词查不出的、易混淆的措辞。**几乎不花钱**:一轮大约几万 token —— 付费 key 几分钱,免费厂商免费。自带任意 OpenAI 兼容厂商的 key 即可:
 
 ```bash
-export GLM_API_KEY=你的_zai_key   # 可选,只给路由召回测试用
+export EVAL_LLM_BASE_URL=https://api.deepseek.com   # 以 DeepSeek 为例;Groq / OpenRouter / Gemini / z.ai 都行
+export EVAL_LLM_MODEL=deepseek-v4-flash             # 便宜款
+export EVAL_LLM_API_KEY=sk-...                      # 在 platform.deepseek.com 申请
 ```
 
-装好之后,在 Claude Code 或 Codex 里让它审一个 skill。你可以说一句*「审查这个 skill」*,或者直接 invoke `skill-doctor`。
+key 只在运行时从环境变量读 —— skill-doctor **不落盘、不写日志、不提交进仓库**,也只发往你设的 base URL(`.env` 已在 `.gitignore` 里)。
+
+装好后,在你的 agent 里让它审一个 skill,说一句*「审查这个 skill」*,或直接 invoke `skill-doctor`。
 
 ---
 
@@ -84,13 +93,13 @@ export GLM_API_KEY=你的_zai_key   # 可选,只给路由召回测试用
 | :--- | :--- |
 | **确定性脚本** | 4 个检查:路由、清单预算、结构、描述精简。全程不调 LLM。跑完给一个退出码,可以接进 CI |
 | **触发模板** | Seleznov 三段式,一种实测出来的 description 写法。它把触发率从 ~50% 提到 ~100%(650 次实验) |
-| **路由召回测试** | 测一测模型凭描述找不找得到每个 reference 文件(这一步叫路由召回)。GLM 投 3 票,多数说了算 |
+| **路由召回测试** | 测一测模型凭描述找不找得到每个 reference 文件(这一步叫路由召回)。可选:任意 OpenAI 兼容模型投 3 票,多数说了算 |
 | **失效模式命名** | 6 种命名好的常见毛病:`no-op`、`sediment`、`premature-completion`、`sprawl`、`weak-leading-word`、`duplication` |
 | **结构手术** | 强制 2 跳路由上限。拆文件时逐字搬运,不留一个孤儿文件 |
-| **预算预警** | 量一量所有 description 加起来会不会撑爆约 1% 的上下文预算 —— **仅 Claude Code**(见下注) |
-| **指南针上限** | SKILL.md 不超过 6000 字符。它自己的 17 个 reference 全部按需加载 |
+| **预算预警** | 量一量所有 description 加起来会不会撑爆该平台的清单预算 —— **Claude Code · Codex · Hermes · OpenClaw**(见下注) |
+| **指南针上限** | SKILL.md 不超过 6000 字符。它自己的 18 个 reference 全部按需加载 |
 
-> **注 —— 预算检查只有 Claude Code 支持。** 它依赖 Claude Code 的一个机制:所有 skill 的描述共享一块预算,大约是模型上下文的 1%。一旦超了,Claude Code 会悄悄把超出的描述砍掉、只留一个名字,而只剩名字的 skill 没法自动触发。Codex 没有这套预算机制,所以这一项在 Codex 上会跳过。其余三个脚本、所有判断维度,都是跨平台通用的。
+> **注 —— 预算检查是平台感知的。** 四个平台都会把每个 skill 的名字+描述塞进系统提示、都有预算、超了都会降级,只是常量不同:Claude Code ≈ 上下文的 1%(静默砍成只剩名字),Codex ≈ 2% 或 8000 字符(先缩描述再省略 skill 并报警),OpenClaw 用 `maxSkillsPromptChars` 上限,Hermes 直接量它的注入快照。`detect_platform.py` 自动选对规则;平台或上下文窗口未知时,脚本会问你。其余三个脚本、所有判断维度,都是跨平台通用的。
 
 ---
 
@@ -104,8 +113,8 @@ SKILL.md + references/ + scripts/
         v
    skill-doctor
         |
-   |-- 确定性脚本      (路由 · 预算 · 精简)
-   |-- GLM 路由召回    (每文件投 3 票)
+   |-- 确定性脚本      (探测 · 路由 · 预算 · 精简)
+   |-- LLM 路由召回    (可选 · 每文件投 3 票)
    |-- 判断维度        (触发 · 失效模式)
         |
         v
@@ -131,8 +140,9 @@ SKILL.md + references/ + scripts/
 
 ```
 skill-doctor/
-├── SKILL.md                            # 指南针 —— 5988 字符,路由到其余一切
-├── references/                         # 17 个按需加载的维度与策略
+├── GETTING_STARTED.md                  # 一次性、agent 驱动的安装引导(装完可删)
+├── SKILL.md                            # 指南针 —— 路由到其余一切
+├── references/                         # 18 个按需加载的维度与策略
 │   ├── index.md                        # reference 路由表(when-to-read + 关键词)
 │   ├── description-templates.md        # 触发强度模板 + 清单预算算法
 │   ├── body-quality-checklist.md       # 正文太长时,砍什么、降级什么
@@ -149,11 +159,13 @@ skill-doctor/
 │   ├── language-policy.md              # 默认英文的语言策略
 │   ├── apply-safety.md                 # 体量门、删除前检查、收尾
 │   ├── live-injection-check.md         # description 到底有没有被注入
+│   ├── output-style.md                 # skill-doctor 给人看时的输出风格
 │   └── rationale.md                    # 这个 skill 为什么存在
-└── scripts/                            # 4 个确定性检查,零依赖
+└── scripts/                            # 确定性检查,零依赖
+    ├── detect_platform.py              # 探测平台 + 它的清单预算规则
     ├── check_routes.py                 # 可达性、孤儿、6000 字符上限
-    ├── check_listing_budget.py         # description 预算(仅 Claude Code)
-    ├── eval_retrieval.py               # GLM 路由召回投票
+    ├── check_listing_budget.py         # description 预算(CC · Codex · Hermes · OpenClaw)
+    ├── eval_retrieval.py               # 可选的 LLM 路由召回投票(自带 key)
     └── check_desc_slim.py              # 安全的 description 精简门
 ```
 

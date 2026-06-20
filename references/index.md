@@ -58,3 +58,6 @@ policy** docs are pulled by the step or section that names them.
 - [rationale.md](rationale.md) — why this skill exists at all.
   when-to-read: background on why the skill exists — the LLM habit of writing a SKILL.md as a manual.
   keywords: rationale, why this skill exists, treats SKILL.md as a manual, long narration, background, philosophy.
+- [output-style.md](output-style.md) — how skill-doctor talks to the human (clear-style prose + opener).
+  when-to-read: writing the conversational prose around a report — questions, confirmations, explanations.
+  keywords: output style, clear-english, clear-chinese, opener, salutation, emoji, conclusion-first, terminal-safe, no metaphors.

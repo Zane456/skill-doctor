@@ -69,17 +69,19 @@ evidence the *skill* is too big — split the skill, don't deepen the tree.
 - `scripts/check_routes.py` — run `python3 <this-skill-dir>/scripts/check_routes.py "<skill_dir>"`: reachability,
   orphans, compass cap; add `--before <snapshot>` after a split for the conservation
   check. Deterministic, free, ALWAYS run after restructuring. Exit 0 clean / 1 issues.
-- `scripts/eval_retrieval.py` — run `python3 <this-skill-dir>/scripts/eval_retrieval.py "<skill_dir>" --glm`
-  (**--glm on by default**, user-approved standing policy 2026-06-10: per restructure,
-  each subdocument is asked **3 times in parallel**, hit = majority vote ≥ 2/3 —
-  absorbs single-call randomness. Total calls = 3 × subdocuments, one sweep, hard cap
-  `--max-calls 90` on total, projected count printed before calling). All runs are
+- `scripts/eval_retrieval.py` — run `python3 <this-skill-dir>/scripts/eval_retrieval.py "<skill_dir>"`.
+  Level 1 (keyword distinctness) is free and always runs. Add `--llm` to also run the
+  real-routing test when an OpenAI-compatible model is configured (`EVAL_LLM_BASE_URL` /
+  `EVAL_LLM_MODEL` / `EVAL_LLM_API_KEY`); an unconfigured `--llm` is reported as skipped,
+  never a pass. With `--llm`, each subdocument is asked **3 times in parallel**, hit =
+  majority vote ≥ 2/3 — absorbs single-call randomness. Total calls = 3 × subdocuments,
+  one sweep, hard cap `--max-calls 90`, projected count printed first. All runs are
   foreground Bash calls, fully visible in the conversation; nothing runs in the
   background.
   **What it actually tests (self-referential, know the boundary):** the test query
   for each subdocument is its own `when-to-read:` line from the index — deterministic,
   not invented at test time. Level 1 scores keyword overlap (free); Level 2 asks
-  glm-5.2 "Task: <when-to-read> → which file?". So it verifies *index
+  the configured model "Task: <when-to-read> → which file?". So it verifies *index
   distinctness* (can the router uniquely find the doc by its declared scenario), NOT
   real user phrasings. Badly written when-to-read lines usually FAIL (safe
   direction); the only false-green is a when-to-read that is unique yet disconnected

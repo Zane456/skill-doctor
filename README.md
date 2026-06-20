@@ -11,7 +11,7 @@ English | [简体中文](README.zh-CN.md)
 > *"A skill the model never triggers is just dead documentation."*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Claude%20Code%20%2B%20Codex-blueviolet.svg)]()
+[![Platform](https://img.shields.io/badge/works_on-Claude_Code_·_Codex_·_Hermes_·_OpenClaw-blueviolet.svg)]()
 [![Checks](https://img.shields.io/badge/checks-4%20deterministic-blue.svg)]()
 [![Type](https://img.shields.io/badge/type-meta--skill-green.svg)]()
 
@@ -21,7 +21,7 @@ English | [简体中文](README.zh-CN.md)
 
 <br>
 
-skill-doctor audits a `SKILL.md` the way an LLM actually reads it. Spec linters stop at frontmatter and broken links. skill-doctor scores how reliably a skill triggers, runs a routing-recall test on every reference file, names the failure mode, and rewrites the package layout when the routing breaks. Four deterministic scripts carry the core checks, and none of them needs an API key.
+skill-doctor audits a `SKILL.md` the way an LLM actually reads it. Spec linters stop at frontmatter and broken links. skill-doctor scores how reliably a skill triggers, runs a routing-recall test on every reference file, names the failure mode, and rewrites the package layout when the routing breaks. Deterministic scripts carry the core checks, none of them needs an API key, and it works across Claude Code, Codex, Hermes, and OpenClaw.
 
 <br>
 
@@ -37,7 +37,7 @@ Point it at a skill and it prints a diagnosis, not a grammar report:
 
 ```text
 [skill-doctor] Auditing: my-skill/SKILL.md   body=142 lines   description=64 chars
-[skill-doctor] Budget: 38 skills installed, descriptions 31k vs ≈40k → fits
+[skill-doctor] Budget (claude_code): 38 skills, 31k vs ≈40k → fits
 
 [skill-doctor] Diagnosis
 
@@ -60,19 +60,28 @@ It does not check your Markdown grammar. It tells you the model will silently sk
 
 ## Up and Running
 
-A skill installs by living in your skills folder:
+**Easiest — let the agent set it up.** Clone the repo, open it in your agent (Claude Code / Codex / Hermes / OpenClaw), and say *"set up skill-doctor"*. It detects your platform, installs into the right skills folder, and offers the optional LLM check. The flow lives in [GETTING_STARTED.md](GETTING_STARTED.md) — delete it once setup is done.
+
+**Manual** — a skill installs by living in your skills folder:
 
 ```bash
 git clone https://github.com/Zane456/skill-doctor.git ~/.claude/skills/skill-doctor
+# Codex / OpenClaw: ~/.agents/skills/skill-doctor   ·   Hermes: ~/.hermes/skills/skill-doctor
 ```
 
-The four scripts run on Python 3 with zero dependencies. The core checks — routing, budget, structure — need nothing else. One optional check, the GLM routing-recall test, calls an LLM, so it reads a key from the environment:
+The scripts run on Python 3 with zero dependencies. Every core check — routing, budget, structure — needs **no API key**.
+
+**Optional — a deeper, AI-powered check.** Beyond the free checks, skill-doctor can ask an LLM to actually test that the model picks the right reference for each task — catching confusable wording the keyword pass can't. It costs almost nothing: one run is roughly tens of thousands of tokens — a few cents on a paid key, free on a free provider. Bring your own key for any OpenAI-compatible provider:
 
 ```bash
-export GLM_API_KEY=your_zai_key   # optional, only for the routing-recall test
+export EVAL_LLM_BASE_URL=https://api.deepseek.com   # DeepSeek shown; Groq / OpenRouter / Gemini / z.ai all work
+export EVAL_LLM_MODEL=deepseek-v4-flash             # the cheap one
+export EVAL_LLM_API_KEY=sk-...                      # from platform.deepseek.com
 ```
 
-Then, inside Claude Code or Codex, ask it to review a skill — *"audit this SKILL.md"* / *"审查这个 skill"* — or invoke `skill-doctor` directly.
+Your key is read from the environment at runtime only — skill-doctor never stores, logs, or commits it, and sends it nowhere except the base URL you set (`.env` is gitignored).
+
+Then ask your agent to review a skill — *"audit this SKILL.md"* / *"审查这个 skill"* — or invoke `skill-doctor` directly.
 
 ---
 
@@ -84,13 +93,13 @@ Every claim below traces to a script or a reference file in this repo.
 | :--- | :--- |
 | **Deterministic scripts** | 4 checks — routing, listing-budget, structure, description-slim — no LLM, exit codes you can wire into CI |
 | **Trigger template** | The Seleznov 3-part description form lifts trigger rate from ~50% to ~100% (650-trial study) |
-| **Routing-recall test** | GLM votes 3× per reference file; a majority decides whether each doc is uniquely findable |
+| **Routing-recall test** | An LLM (any OpenAI-compatible, optional) votes 3× per reference file; a majority decides whether each doc is uniquely findable |
 | **Failure-mode taxonomy** | 6 named modes — `no-op` / `sediment` / `premature-completion` / `sprawl` / `weak-leading-word` / `duplication` |
 | **Structure surgery** | Enforces a hard 2-hop routing cap, splits files verbatim, leaves 0 orphans |
-| **Listing-budget guard** | Measures all installed descriptions against the ~1% context budget — **Claude Code only** (see note) |
-| **Compass cap** | SKILL.md ≤ 6000 chars; this skill's own 17 references load on demand |
+| **Listing-budget guard** | Measures installed descriptions against each platform's listing budget — **Claude Code, Codex, Hermes, OpenClaw** (see note) |
+| **Compass cap** | SKILL.md ≤ 6000 chars; this skill's own 18 references load on demand |
 
-> **Note — the listing-budget check is Claude Code only.** It relies on Claude Code's shared skill-listing budget (≈1% of the model's context window; on overflow CC silently drops descriptions to name-only, and a name-only skill cannot auto-trigger). Codex has no equivalent budget mechanism, so this one check is skipped there. The other three scripts and every judgment dimension are cross-agent.
+> **Note — the listing-budget check is platform-aware.** Every supported platform injects each skill's name+description into the system prompt under a budget and degrades on overflow; only the constant differs — Claude Code ~1% of context (silent name-only truncation), Codex ~2% or 8000 chars (shortens then omits with a warning), OpenClaw a `maxSkillsPromptChars` cap, Hermes measured straight from its injected-prompt snapshot. `detect_platform.py` picks the right rule; if the platform or context window is unknown, the script asks you. The other three scripts and every judgment dimension are cross-agent.
 
 ---
 
@@ -104,8 +113,8 @@ SKILL.md + references/ + scripts/
         v
    skill-doctor
         |
-   |-- deterministic scripts   (routes · budget · slim)
-   |-- GLM routing-recall       (vote 3x per file)
+   |-- deterministic scripts   (detect · routes · budget · slim)
+   |-- LLM routing-recall       (optional · vote 3x per file)
    |-- judgment dimensions      (trigger · failure modes)
         |
         v
@@ -127,8 +136,9 @@ SKILL.md + references/ + scripts/
 
 ```
 skill-doctor/
-├── SKILL.md                            # the compass — 5988 chars, routes to everything
-├── references/                         # 17 on-demand dimensions and policies
+├── GETTING_STARTED.md                  # one-time, agent-driven setup (deletable after)
+├── SKILL.md                            # the compass — routes to everything
+├── references/                         # 18 on-demand dimensions and policies
 │   ├── index.md                        # the reference router (when-to-read + keywords)
 │   ├── description-templates.md        # trigger-strength template + listing-budget math
 │   ├── body-quality-checklist.md       # when the body is too long, what to demote
@@ -145,11 +155,13 @@ skill-doctor/
 │   ├── language-policy.md              # English-by-default policy
 │   ├── apply-safety.md                 # size gate, pre-deletion check, close the loop
 │   ├── live-injection-check.md         # is the description actually injected
+│   ├── output-style.md                 # how skill-doctor talks to the human
 │   └── rationale.md                    # why this skill exists
-└── scripts/                            # 4 deterministic checks, no dependencies
+└── scripts/                            # deterministic checks, no dependencies
+    ├── detect_platform.py              # which platform + its listing-budget rule
     ├── check_routes.py                 # reachability, orphans, 6000-char cap
-    ├── check_listing_budget.py         # description budget (Claude Code only)
-    ├── eval_retrieval.py               # GLM routing-recall vote
+    ├── check_listing_budget.py         # description budget (CC · Codex · Hermes · OpenClaw)
+    ├── eval_retrieval.py               # optional LLM routing-recall vote (BYOK)
     └── check_desc_slim.py              # safe description-slimming gate
 ```
 

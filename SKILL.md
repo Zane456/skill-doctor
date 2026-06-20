@@ -10,16 +10,16 @@ Diagnose and improve any SKILL.md. **A compass, not a manual** — the concrete 
 ## Diagnosis flow after triggering (each step must produce visible output)
 
 > A step with no visible output gets silently skipped (Seleznov experiment, 2026). Print one confirmation line per step.
-> **Self-review flag**: if this session has already Edited/Written the target SKILL.md, **prefix every doctor print line with `[self-review]`**, and append one line at the end of Step 3: "conclusion is self-assessed, recommend re-reviewing with a fresh sub-agent." Credibility is discounted, visibility is forced.
+> **Self-review flag**: if this session has already Edited/Written the target SKILL.md, **prefix every doctor print line with `[self-review]`**, and append one line at the end of Step 3: "conclusion is self-assessed, recommend re-reviewing with a fresh sub-agent."
 
 ### Step 1: Read the target SKILL.md, announce the diagnosis start
 
 Read the full text of the SKILL.md being edited, run `python3 <this-skill-dir>/scripts/check_listing_budget.py "<project_root>"` (quote the path — spaces are common), print two lines:
 ```
 [skill-doctor] Auditing: <path>  body=<N> lines  description=<M> chars
-[skill-doctor] Budget: <K> skills installed, descriptions <T> chars vs ≈<B> → <fits | OVERFLOW ×N.N>
+[skill-doctor] Budget (<platform>): <K> skills, <T> chars vs ≈<B> → <fits | OVERFLOW ×N.N>
 ```
-Exit codes: 0 = fits; 1 = overflow; only 2 = budget unavailable (fallback row below). **Overflow is a population-level NOTICE, not a finding against the audited skill**: print the numbers so the user knows, but do NOT shorten this skill's description for budget reasons — slimming is a global pass the user runs deliberately across all skills, never a single-skill fix.
+Auto-detects platform (CC / Codex / Hermes / OpenClaw). Exit: 0 = fits; 1 = overflow; 2 = unavailable (no platform / context unknown → ask the user's platform + window). **Overflow is a population-level NOTICE, not a finding against the audited skill**: print the numbers so the user knows, but do NOT shorten this skill's description for budget reasons — slimming is a global pass, never a single-skill fix.
 
 ### Step 2: Judge against the dimensions
 
@@ -71,7 +71,7 @@ Format strictly as below, print to the conversation:
 
 **P3 placement rule**: ask "if not fixed, will the next LLM running this skill do something wrong?" — yes → ❌; merely ugly/verbose → ⚠️. See `references/priority-tiers.md`.
 
-Each issue must give a **specific line number or field** — no vagueness. **When the same kind of violation appears in multiple places, list them separately** — e.g. content miscategorized in three subdirectories should be 3 issues, not 1 merged entry, so the user can locate and fix each one.
+Each issue must give a **specific line number or field** — no vagueness. **When the same kind of violation appears in multiple places, list them separately** — e.g. content miscategorized in three subdirectories should be 3 issues, not 1 merged entry.
 
 **Name the failure mode** when one applies (see `references/predictability-glossary.md`): prefix the finding with `[no-op]` / `[sediment]` / `[premature-completion]` / `[weak-leading-word]` / `[duplication]` / `[sprawl]`. The name says *what kind*; the P-tier still says *how bad* — orthogonal, so the prefix never replaces the tier.
 
@@ -91,11 +91,11 @@ The quantified hard rules (a violation is an error, not a suggestion) live in `r
 
 ## Exception fallback
 
-When a path is missing, YAML won't parse, or a bundled script (`scripts/check_listing_budget.py` / `scripts/check_routes.py` / `scripts/eval_retrieval.py` / `scripts/check_desc_slim.py`) is missing or exits 2 — handle per `references/exception-fallback.md`. Announce the exception to the user first; never silently skip.
+When a path is missing, YAML won't parse, or a bundled script (`scripts/check_listing_budget.py` + `scripts/detect_platform.py` / `scripts/check_routes.py` / `scripts/eval_retrieval.py` / `scripts/check_desc_slim.py`) is missing or exits 2 — handle per `references/exception-fallback.md`. Announce the exception to the user first; never silently skip.
 
-## Language: default to English
+## Output & language
 
-Body and references default to English; flag unjustified non-English as ⚠️. Full policy + the two justified exceptions (bilingual trigger keywords, inherently-non-English domain content) in `references/language-policy.md`.
+Report prose follows `references/output-style.md` (clear, terminal-safe, conclusion-first). Body/references default to English; flag unjustified non-English ⚠️ — policy + the two justified exceptions in `references/language-policy.md`.
 
 ## Out of scope for this skill
 

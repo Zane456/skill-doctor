@@ -9,34 +9,38 @@ Two levels, cheap by default:
     itself. A doc whose description is not distinct enough mis-routes here — and an
     LLM would likely mis-route too.
 
-  Level 2 (--glm, glm-5.2)  — real LLM routing, sampled.
-    Hands the index (filename + blurb for every doc) to glm-5.2 and asks, per
-    doc, "to do <when-to-read>, which file?". Each doc is asked --samples times
-    (default 3) IN PARALLEL; a doc counts as hit on a majority vote (>=2/3).
-    Total calls = subdocuments x samples, one sweep, NO improve/eval loop.
-    --max-calls caps TOTAL calls; if docs x samples exceeds it, samples are
-    reduced to fit (never silently dropped docs). Projected count printed up front.
+  Level 2 (--llm)  — real LLM routing, sampled. OPTIONAL, bring your own key.
+    Hands the index (filename + blurb for every doc) to an OpenAI-compatible chat
+    model and asks, per doc, "to do <when-to-read>, which file?". Each doc is
+    asked --samples times (default 3) IN PARALLEL; a doc counts as hit on a
+    majority vote (>=2/3). Total calls = subdocuments x samples, one sweep, NO
+    improve/eval loop. --max-calls caps TOTAL calls; if docs x samples exceeds
+    it, samples are reduced to fit (never silently dropped docs).
+
+    Configure via environment variables (any OpenAI-compatible provider works —
+    DeepSeek, Groq, OpenRouter, Gemini's OpenAI endpoint, z.ai's, ...):
+      EVAL_LLM_BASE_URL   e.g. https://api.deepseek.com
+      EVAL_LLM_MODEL      e.g. deepseek-v4-flash
+      EVAL_LLM_API_KEY    your key
+    The script reads these at runtime only; it never stores, logs, or transmits
+    the key anywhere except to EVAL_LLM_BASE_URL.
 
 Usage:
   python3 eval_retrieval.py <skill_dir>
-  python3 eval_retrieval.py <skill_dir> --glm [--samples 3] [--max-calls 90]
+  python3 eval_retrieval.py <skill_dir> --llm [--samples 3] [--max-calls 90]
 
-Exit 0 if hit-rate == 100%, else 1.
+Exit 0 if everything that ran is clean, else 1. (--llm requested but unconfigured
+is reported as skipped — it is never counted as a pass.)
 """
 
 import argparse
 import json
 import os
 import re
-import subprocess
 import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-
-GLM_ENDPOINT = "https://api.z.ai/api/anthropic/v1/messages"
-GLM_MODEL = "glm-5.2"
-PLIST = Path.home() / "Library/LaunchAgents/com.user.sync-knowledge-profile.plist"
 
 STOPWORDS = set("""a an the to of for and or in on at by with from into when how what
 which this that these those is are be use used using read when-to-read see file files
@@ -157,52 +161,57 @@ def level1_keyword(entries):
     return hits, len(entries)
 
 
-def read_glm_key() -> str:
-    key = os.environ.get("GLM_API_KEY")
-    if key:
-        return key.strip()
-    try:
-        out = subprocess.run(
-            ["/usr/libexec/PlistBuddy", "-c",
-             "Print :EnvironmentVariables:GLM_API_KEY", str(PLIST)],
-            capture_output=True, text=True, timeout=10,
-        )
-        if out.returncode == 0:
-            return out.stdout.strip()
-    except Exception:
-        pass
-    return ""
+def read_llm_config():
+    """Return (base_url, model, api_key) from EVAL_LLM_* env vars; '' for any unset.
+
+    Reads the key at runtime only — never stored, logged, or sent anywhere except
+    to base_url. No per-machine fallback: configure via the environment.
+    """
+    return (
+        os.environ.get("EVAL_LLM_BASE_URL", "").strip(),
+        os.environ.get("EVAL_LLM_MODEL", "").strip(),
+        os.environ.get("EVAL_LLM_API_KEY", "").strip(),
+    )
 
 
-def glm_call(key: str, prompt: str, timeout: int = 60) -> str:
+def llm_call(base_url: str, model: str, key: str, prompt: str, timeout: int = 60) -> str:
+    """One OpenAI-compatible /chat/completions call. Returns the message text."""
+    endpoint = base_url.rstrip("/") + "/chat/completions"
     body = json.dumps({
-        "model": GLM_MODEL,
+        "model": model,
         "max_tokens": 64,
         "messages": [{"role": "user", "content": prompt}],
     }).encode("utf-8")
-    req = urllib.request.Request(GLM_ENDPOINT, data=body, method="POST")
-    req.add_header("x-api-key", key)
-    req.add_header("anthropic-version", "2023-06-01")
+    req = urllib.request.Request(endpoint, data=body, method="POST")
+    req.add_header("Authorization", f"Bearer {key}")
     req.add_header("Content-Type", "application/json")
     with urllib.request.urlopen(req, timeout=timeout) as r:
         data = json.loads(r.read().decode("utf-8"))
-    return data["content"][0]["text"]
+    return data["choices"][0]["message"]["content"]
 
 
-def level2_glm(entries, max_calls: int, samples: int):
-    print("[eval_retrieval] Level 2 — glm-5.2 routing (parallel sampled, majority vote)")
+def level2_llm(entries, max_calls: int, samples: int):
+    """Returns (hits, total). total == -1 means 'requested but not configured'
+    (skipped, not a pass and not a hard failure)."""
+    base_url, model, key = read_llm_config()
+    if not (base_url and model and key):
+        missing = [n for n, v in (("EVAL_LLM_BASE_URL", base_url),
+                                  ("EVAL_LLM_MODEL", model),
+                                  ("EVAL_LLM_API_KEY", key)) if not v]
+        print("[eval_retrieval] Level 2 — SKIPPED (not configured): missing "
+              + ", ".join(missing))
+        print("  Set EVAL_LLM_BASE_URL / EVAL_LLM_MODEL / EVAL_LLM_API_KEY to enable "
+              "the real-routing test (any OpenAI-compatible provider). "
+              "Not run = not counted as a pass.")
+        return 0, -1
+    print(f"[eval_retrieval] Level 2 — {model} routing (parallel sampled, majority vote)")
     n = len(entries)
     if n * samples > max_calls:
         samples = max(1, max_calls // n)
         print(f"  NOTE: {n} docs x requested samples > --max-calls {max_calls}; samples reduced to {samples}.")
     majority = samples // 2 + 1
-    print(f"  Will call {GLM_MODEL} {n} docs x {samples} samples = {n * samples} call(s) in parallel; "
+    print(f"  Will call {model} {n} docs x {samples} samples = {n * samples} call(s) in parallel; "
           f"hit = >={majority}/{samples} votes. One sweep, no loop.")
-    key = read_glm_key()
-    if not key:
-        print("  ERROR: no GLM_API_KEY (env or plist). GLM level did NOT run — "
-              "reporting FAILURE, not a silent skip.", file=sys.stderr)
-        return 0, 0  # total=0 -> main marks the run as failed (see glm_ok)
     catalog = "\n".join(
         f"- {e['file']}: {(e['desc'].splitlines() or [''])[0].strip(' -*')[:120]}"
         for e in entries
@@ -215,7 +224,7 @@ def level2_glm(entries, max_calls: int, samples: int):
             f"Task: {e['query']}\n\nFilename:"
         )
         try:
-            ans = glm_call(key, prompt)
+            ans = llm_call(base_url, model, key, prompt)
         except Exception as ex:
             return ("error", str(ex))
         picked = ans.strip().split()[0].strip("`'\"") if ans.strip() else ""
@@ -237,7 +246,7 @@ def level2_glm(entries, max_calls: int, samples: int):
             if wrong or errs:
                 print(f"  [shaky] '{e['file']}' {oks}/{samples} votes (misses -> {wrong}, errors {len(errs)})")
         else:
-            print(f"  [mis-route] '{e['file']}' only {oks}/{samples} votes; GLM picked {wrong or errs}")
+            print(f"  [mis-route] '{e['file']}' only {oks}/{samples} votes; model picked {wrong or errs}")
     total = len(entries) or 1
     print(f"  hit-rate (majority): {hits}/{len(entries)} = {100*hits//total}%")
     return hits, len(entries)
@@ -246,9 +255,11 @@ def level2_glm(entries, max_calls: int, samples: int):
 def main():
     ap = argparse.ArgumentParser(description="Subdocument retrievability check")
     ap.add_argument("skill_dir")
-    ap.add_argument("--glm", action="store_true", help="also run glm-5.2 routing (parallel sampled)")
+    ap.add_argument("--llm", "--glm", dest="llm", action="store_true",
+                    help="also run real LLM routing (OpenAI-compatible, parallel sampled); "
+                         "configure via EVAL_LLM_BASE_URL / EVAL_LLM_MODEL / EVAL_LLM_API_KEY")
     ap.add_argument("--samples", type=int, default=3, help="parallel samples per subdocument (default 3, majority vote)")
-    ap.add_argument("--max-calls", type=int, default=90, help="hard cap on TOTAL GLM calls (default 90)")
+    ap.add_argument("--max-calls", type=int, default=90, help="hard cap on TOTAL LLM calls (default 90)")
     args = ap.parse_args()
 
     root = Path(args.skill_dir).resolve()
@@ -268,14 +279,15 @@ def main():
 
     h1, t1 = level1_keyword(entries)
     h2 = t2 = None
-    if args.glm:
-        h2, t2 = level2_glm(entries, args.max_calls, args.samples)
+    if args.llm:
+        h2, t2 = level2_llm(entries, args.max_calls, args.samples)
 
     level1_ok = (h1 == t1)
-    # When --glm is requested it MUST actually run (t2>0) and fully pass; a
-    # skipped/keyless/all-errored GLM level must NOT be reported as success.
-    glm_ok = (not args.glm) or (t2 is not None and t2 > 0 and h2 == t2)
-    clean = level1_ok and (missing == []) and glm_ok
+    # Level 2 affects the verdict ONLY when it actually ran (t2 > 0). Requested but
+    # unconfigured (t2 == -1) is a skip: never a pass, never a hard failure here.
+    llm_ran = (t2 is not None and t2 > 0)
+    llm_ok = (not llm_ran) or (h2 == t2)
+    clean = level1_ok and (missing == []) and llm_ok
     sys.exit(0 if clean else 1)
 
 
