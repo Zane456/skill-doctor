@@ -127,17 +127,30 @@ SKILL.md + references/ + scripts/
 
 ```
 skill-doctor/
-├── SKILL.md                   # the compass — 5988 chars, points to everything else
-├── references/                # 17 on-demand dimensions
-│   ├── description-templates.md   # the Seleznov trigger template
-│   ├── structure-surgery.md       # split / merge / index, 2-hop cap
-│   ├── predictability-glossary.md # the named failure modes
-│   └── …
-└── scripts/                   # 4 deterministic checks, no dependencies
-    ├── check_routes.py            # reachability, orphans, 6000-char cap
-    ├── check_listing_budget.py    # description budget (Claude Code)
-    ├── eval_retrieval.py          # GLM routing-recall vote
-    └── check_desc_slim.py         # safe description-slimming gate
+├── SKILL.md                            # the compass — 5988 chars, routes to everything
+├── references/                         # 17 on-demand dimensions and policies
+│   ├── index.md                        # the reference router (when-to-read + keywords)
+│   ├── description-templates.md        # trigger-strength template + listing-budget math
+│   ├── body-quality-checklist.md       # when the body is too long, what to demote
+│   ├── visible-output-rule.md          # every workflow step must print something
+│   ├── yaml-pitfalls.md                # frontmatter formatting traps
+│   ├── hard-code-vs-llm-judgment.md    # script it, or leave it to the LLM
+│   ├── assets-vs-references.md         # sorting templates vs reference docs
+│   ├── structure-surgery.md            # split / restructure / route, 2-hop cap
+│   ├── effect-dry-run.md               # walk one prompt through the workflow
+│   ├── priority-tiers.md               # P0–P3 severity definitions
+│   ├── predictability-glossary.md      # the named failure modes
+│   ├── hard-rules.md                   # the quantified must-pass rules
+│   ├── exception-fallback.md           # what to do when something errors
+│   ├── language-policy.md              # English-by-default policy
+│   ├── apply-safety.md                 # size gate, pre-deletion check, close the loop
+│   ├── live-injection-check.md         # is the description actually injected
+│   └── rationale.md                    # why this skill exists
+└── scripts/                            # 4 deterministic checks, no dependencies
+    ├── check_routes.py                 # reachability, orphans, 6000-char cap
+    ├── check_listing_budget.py         # description budget (Claude Code only)
+    ├── eval_retrieval.py               # GLM routing-recall vote
+    └── check_desc_slim.py              # safe description-slimming gate
 ```
 
 MIT — use it, fork it, ship it.
