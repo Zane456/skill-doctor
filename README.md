@@ -18,10 +18,10 @@ English | [简体中文](README.zh-CN.md)
 
 ## Features
 
-- Audits your skill's docs against the spec and flags which files to split
-- Draws on the LLM-wiki index pattern so every file stays reachable by routing
-- Grounds every check it makes in Anthropic's official spec and best practices
-- Verifies your skill will be recognized and invoked inside a crowded global setup
+1. Audits your skill's docs against the spec and flags which files to split
+2. Draws on the LLM-wiki index pattern so every file stays reachable by routing
+3. Grounds every check it makes in Anthropic's official spec and best practices
+4. Verifies your skill will be recognized and invoked inside a crowded global setup
 
 ---
 
