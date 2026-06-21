@@ -30,6 +30,11 @@ English | [简体中文](README.zh-CN.md)
 
 skill-doctor is a skill that audits the skills you write. You write a skill, but you can't tell whether the model will trigger it when it should, read the body in full, or find the right reference file. These failures never throw an error, so you never notice them. skill-doctor finds them one by one, sorts them by severity, explains why each one is a problem and how to fix it, and edits your files only after you say so. It only reshapes structure, never behavior: it reorganizes your skill into a cleaner, more standard layout, but what the skill does and how it does it stay exactly the same. It's for anyone who writes their own skills.
 
+Two things it accounts for that are easy to miss:
+
+1. **API key** — verification runs in a clean environment, isolated from your current context, so the test reflects the fix.
+2. **Your model's context size** — skill-doctor sums the descriptions of all your skills and checks whether that load makes the one you're testing fail to trigger.
+
 ---
 
 ## See It in Action
